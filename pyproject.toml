@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "pyo3-pydantic"
+version = "0.1.0"
+description = ""
+authors = ["Yuta Hinokuma <higumachan@users.noreply.github.com>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "3.11.7"
+pydantic = "^2.7.4"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

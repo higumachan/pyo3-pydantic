@@ -1,4 +1,4 @@
-use pyo3::{IntoPy, PyObject, Python, ToPyObject};
+use pyo3::{IntoPy, PyErr, PyObject, Python, ToPyObject};
 use pyo3::types::IntoPyDict;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
@@ -10,6 +10,17 @@ pub enum Error {
     Pyo3Error(#[from] pyo3::PyErr),
     #[error("Serde error: {0}")]
     SerdeError(#[from] serde_json::Error),
+}
+
+impl From<Error> for PyErr {
+    fn from(err: Error) -> PyErr {
+        match err {
+            Error::Pyo3Error(err) => err,
+            Error::SerdeError(err) => {
+                PyErr::new::<pyo3::exceptions::PyValueError, _>(err.to_string())
+            }
+        }
+    }
 }
 
 /// Convert a Pydantic model to a Rust struct

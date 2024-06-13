@@ -1,5 +1,3 @@
-### README
-
 # pyo3-pydantic
 
 A library for efficiently converting between Pydantic's `BaseModel` in Python and Rust `struct`. This library aims to

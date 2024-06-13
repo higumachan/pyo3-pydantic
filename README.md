@@ -40,9 +40,50 @@ pyo3-pydantic = { git = "https://github.com/higumachan/pyo3-pydantic.git" }
 
 ## Usage
 
+### Code example
+
+```rust
+#[derive(Deserialize)]
+struct MyStruct {
+    name: String,
+    age: i32,
+}
+
+#[pyfunction]
+fn some_function(py: Python, pydantic_model: PyObject) -> PyResult<i32> {
+    let model: MyStruct = from_pydantic_model(py, pydantic_model, vec![])?;
+
+    return Ok(model.age * 2);
+}
+
+/// A Python module implemented in Rust.
+#[pymodule]
+fn simple_example(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add_function(wrap_pyfunction!(some_function, m)?)?;
+    Ok(())
+}
+
+```
+
+```python
+import simple_example
+from pydantic import BaseModel
+
+
+class MyModel(BaseModel):
+    name: str
+    age: int
+
+
+if __name__ == '__main__':
+    model = MyModel(name="higumachan", age=30)
+    result = simple_example.some_function(model)
+    print(result)  # == 60
+```
+
 ### Example
 
-see examples/example-project
+see [examples/example-project](examples/simple-example)
 
 ## Contributing
 

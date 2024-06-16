@@ -1,5 +1,6 @@
-use pyo3::{IntoPy, PyErr, PyObject, Python, ToPyObject};
-use pyo3::types::IntoPyDict;
+use pyo3::{Bound, IntoPy, PyErr, PyObject, Python, ToPyObject};
+use pyo3::prelude::PyDictMethods;
+use pyo3::types::{IntoPyDict, PyDict};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use thiserror::Error;
@@ -42,7 +43,7 @@ pub fn from_pydantic_model<T: DeserializeOwned>(
 }
 
 /// Convert a Rust struct to a Pydantic model
-pub fn to_pydantic_model<T: Serialize>(
+pub fn to_pydantic_model_with_import<T: Serialize>(
     py: Python,
     model: T,
     python_package_path: &str,
@@ -63,6 +64,24 @@ pub fn to_pydantic_model<T: Serialize>(
                 "model_package.{}.model_validate_json(model_json)",
                 model_name
             ),
+            None,
+            Some(&locals),
+        )?
+        .to_object(py))
+}
+
+pub fn to_pydantic_model_with_locals<T: Serialize>(
+    py: Python,
+    locals: &Bound<PyDict>,
+    model_name: &str,
+    model: T,
+) -> Result<PyObject, Error> {
+    let model_json = serde_json::to_string(&model)?;
+    locals.set_item("model_json", model_json).unwrap();
+
+    Ok(py
+        .eval_bound(
+            &format!("{}.model_validate_json(model_json)", model_name),
             None,
             Some(&locals),
         )?
@@ -142,7 +161,8 @@ mod tests {
                 name: "Garfield".to_string(),
                 age: 42,
             };
-            let pydantic_pet = to_pydantic_model(py, pet, "pyo3_pydantic.model", "Pet").unwrap();
+            let pydantic_pet =
+                to_pydantic_model_with_import(py, pet, "pyo3_pydantic.model", "Pet").unwrap();
             let locals = [("pet", pydantic_pet)].into_py_dict_bound(py);
             let pet_name = py
                 .eval_bound("pet.name", None, Some(&locals))
@@ -165,7 +185,7 @@ mod tests {
                 kind: "Tree".to_string(),
             };
             let pydantic_pet: Result<PyObject, Error> =
-                to_pydantic_model(py, plant, "pyo3_pydantic.model", "Pet");
+                to_pydantic_model_with_import(py, plant, "pyo3_pydantic.model", "Pet");
             dbg!(&pydantic_pet);
             assert!(matches!(pydantic_pet, Err(Error::Pyo3Error(_))));
             match pydantic_pet {
@@ -190,7 +210,7 @@ mod tests {
             };
 
             let pydantic_pet: Result<PyObject, Error> =
-                to_pydantic_model(py, pet, "pyo3_pydantic.not_found_model", "Pet");
+                to_pydantic_model_with_import(py, pet, "pyo3_pydantic.not_found_model", "Pet");
             dbg!(&pydantic_pet);
             assert!(matches!(pydantic_pet, Err(Error::Pyo3Error(_))));
             match pydantic_pet {

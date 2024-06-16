@@ -24,7 +24,7 @@ fn pet_age_2times(py: Python, pet: PyObject) -> PyResult<PyObject> {
         is_vaccinated: pet.is_vaccinated,
     };
 
-    Ok(pyo3_pydantic::to_pydantic_model(
+    Ok(pyo3_pydantic::to_pydantic_model_with_import(
         py,
         pet,
         "simple_example_py",
